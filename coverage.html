@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карта покрытия</title>
+<style>
+  :root{
+    --bg:#0f1216; --card:#171c23; --card2:#1e252e;
+    --text:#e8ecf1; --muted:#8b95a3;
+    --green:#4ade80; --amber:#fbbf24; --gray:#39424e;
+    --red:#f87171; --border:#2a323d;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    padding:16px;}
+  .wrap{max-width:720px; margin:0 auto;}
+  h1{font-size:20px; font-weight:600;}
+  .sub{color:var(--muted); font-size:13px; margin:4px 0 20px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:20px; margin-bottom:16px;}
+  .cardTitle{font-size:14px; font-weight:600; margin-bottom:12px;}
+  .muted{color:var(--muted); font-weight:400;}
+  .big{font-size:56px; font-weight:800; line-height:1;}
+  .big small{font-size:22px; color:var(--muted); font-weight:600;}
+  .bar{height:18px; border-radius:9px; overflow:hidden; display:flex;
+    background:var(--gray); margin:16px 0 10px;}
+  .bar div{height:100%;}
+  .seg-g{background:var(--green);} .seg-a{background:var(--amber);}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--muted);}
+  .legend b{color:var(--text);}
+  .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px;}
+  .warn{margin-top:12px; color:var(--red); font-size:13px;}
+  .addRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  input[type=text]{background:var(--card2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:9px 10px; font-size:14px; flex:1; min-width:140px;}
+  .chk{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer;}
+  .btn{background:var(--card2); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:6px 10px; font-size:13px; cursor:pointer;}
+  .btn.primary{background:var(--green); color:#08130c; border-color:transparent; font-weight:700;}
+  .row{display:flex; align-items:center; gap:8px; padding:10px 0;
+    border-bottom:1px solid var(--border);}
+  .row:last-child{border-bottom:none;}
+  .row .name{flex:1; font-size:14px;}
+  .row .w{font-size:13px; color:var(--muted); min-width:52px; text-align:right;}
+  .d-g{background:var(--green);} .d-a{background:var(--amber);}
+  .nextRow{display:flex; justify-content:space-between; padding:8px 0;
+    border-bottom:1px solid var(--border); font-size:14px;}
+  .nextRow:last-child{border-bottom:none;}
+  .nW{color:var(--amber); font-weight:700;}
+  .empty{color:var(--muted); font-size:13px; padding:6px 0;}
+  .tools{display:flex; gap:8px; margin-top:14px;}
+  .foot{color:var(--muted); font-size:12px; text-align:center; margin:8px 0 24px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Карта покрытия</h1>
+  <div class="sub">Сколько территории освоено — и что учить дальше</div>
+
+  <div class="card">
+    <div class="big"><span id="bigNum">0</span><small>% освоено</small></div>
+    <div class="bar"><div class="seg-g" id="segG"></div><div class="seg-a" id="segA"></div></div>
+    <div class="legend">
+      <span><span class="dot d-g"></span>освоено <b id="legG">0%</b></span>
+      <span><span class="dot d-a"></span>учтено, не освоено <b id="legA">0%</b></span>
+      <span><span class="dot" style="background:var(--gray)"></span>ещё не учтено <b id="legU">100%</b></span>
+    </div>
+    <div id="warn" class="warn" hidden>Сумма весов больше 100% — проверь цифры.</div>
+  </div>
+
+  <div class="card">
+    <div class="cardTitle">Добавить вариант</div>
+    <form id="addForm" class="addRow">
+      <input type="text" id="addName" placeholder="Название (напр. Шотландский гамбит)" required>
+      <input type="text" id="addWeight" inputmode="decimal" placeholder="Вес, %" style="max-width:90px; flex:none;" required>
+      <label class="chk"><input type="checkbox" id="addMastered"> освоено</label>
+      <button class="btn primary" type="submit">＋</button>
+    </form>
+  </div>
+
+  <div class="card" id="nextCard" hidden>
+    <div class="cardTitle">Самое жирное из неосвоенного</div>
+    <div id="nextList"></div>
+  </div>
+
+  <div class="card">
+    <div class="cardTitle">Все варианты <span id="count" class="muted"></span></div>
+    <div id="list"></div>
+    <div class="tools">
+      <button class="btn" id="expBtn">Экспорт JSON</button>
+      <button class="btn" id="impBtn">Импорт JSON</button>
+      <input type="file" id="impFile" accept=".json,application/json" hidden>
+    </div>
+  </div>
+
+  <div class="foot">Данные хранятся в этом браузере. Делай экспорт для резервной копии.</div>
+</div>
+
+<script>
+const LS_KEY = 'coverage-data-v1';
+let state = load();
+let editingId = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ const d = JSON.parse(raw); if(d && Array.isArray(d.entries)) return d; }
+  }catch(e){}
+  return {entries: []};
+}
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function parseW(v){ const n = parseFloat(String(v).trim().replace(',', '.')); return isFinite(n) ? n : NaN; }
+function fmt(x){ return String(+x.toFixed(1)); }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return esc(s).replace(/"/g,'&quot;'); }
+
+function totals(){
+  const mapped = state.entries.reduce((s,e)=>s+e.weight,0);
+  const mastered = state.entries.filter(e=>e.mastered).reduce((s,e)=>s+e.weight,0);
+  return {mapped, mastered, open: Math.max(0,mapped-mastered), unmapped: Math.max(0,100-mapped)};
+}
+
+function rowHTML(e){
+  if(editingId === e.id){
+    return '<div class="row" data-id="'+e.id+'">'
+      + '<input type="text" class="eName" value="'+escAttr(e.name)+'" style="flex:1;">'
+      + '<input type="text" class="eWeight" inputmode="decimal" value="'+e.weight+'" style="flex:none; max-width:80px;">'
+      + '<button class="btn primary act-save">Ок</button>'
+      + '<button class="btn act-cancel">✕</button></div>';
+  }
+  return '<div class="row" data-id="'+e.id+'">'
+    + '<span class="dot '+(e.mastered?'d-g':'d-a')+'"></span>'
+    + '<span class="name">'+esc(e.name)+'</span>'
+    + '<span class="w">'+fmt(e.weight)+'%</span>'
+    + '<button class="btn act-toggle" title="'+(e.mastered?'вернуть в работу':'отметить освоенным')+'">'+(e.mastered?'↩':'✓')+'</button>'
+    + '<button class="btn act-edit">✎</button>'
+    + '<button class="btn act-del">✕</button></div>';
+}
+
+function render(){
+  const t = totals();
+  document.getElementById('bigNum').textContent = fmt(t.mastered);
+  const denom = Math.max(100, t.mapped);
+  document.getElementById('segG').style.width = (t.mastered/denom*100)+'%';
+  document.getElementById('segA').style.width = (t.open/denom*100)+'%';
+  document.getElementById('legG').textContent = fmt(t.mastered)+'%';
+  document.getElementById('legA').textContent = fmt(t.open)+'%';
+  document.getElementById('legU').textContent = fmt(t.unmapped)+'%';
+  document.getElementById('warn').hidden = !(t.mapped > 100.001);
+
+  const next = state.entries.filter(e=>!e.mastered).sort((a,b)=>b.weight-a.weight).slice(0,5);
+  document.getElementById('nextCard').hidden = !next.length;
+  document.getElementById('nextList').innerHTML = next.map(e=>
+    '<div class="nextRow"><span>'+esc(e.name)+'</span><span class="nW">'+fmt(e.weight)+'%</span></div>').join('');
+
+  const mCount = state.entries.filter(e=>e.mastered).length;
+  document.getElementById('count').textContent = '— всего '+state.entries.length+', освоено '+mCount;
+
+  const sorted = state.entries.slice().sort((a,b)=>b.weight-a.weight);
+  document.getElementById('list').innerHTML = sorted.length
+    ? sorted.map(rowHTML).join('')
+    : '<div class="empty">Пока пусто. Добавь первый вариант — например, «Шотландский гамбит, 1.2%».</div>';
+}
+
+document.getElementById('addForm').addEventListener('submit', function(ev){
+  ev.preventDefault();
+  const name = document.getElementById('addName').value.trim();
+  const w = parseW(document.getElementById('addWeight').value);
+  if(!name || !(w>0)){ alert('Нужны название и вес больше нуля.'); return; }
+  state.entries.push({id:uid(), name:name, weight:w, mastered:document.getElementById('addMastered').checked});
+  document.getElementById('addName').value='';
+  document.getElementById('addWeight').value='';
+  document.getElementById('addMastered').checked=false;
+  save(); render();
+  document.getElementById('addName').focus();
+});
+
+document.getElementById('list').addEventListener('click', function(ev){
+  const btn = ev.target.closest('button'); if(!btn) return;
+  const row = ev.target.closest('.row'); if(!row) return;
+  const id = row.dataset.id;
+  const e = state.entries.find(x=>x.id===id); if(!e) return;
+  if(btn.classList.contains('act-toggle')){ e.mastered = !e.mastered; save(); render(); }
+  else if(btn.classList.contains('act-del')){
+    if(confirm('Удалить «'+e.name+'»?')){ state.entries = state.entries.filter(x=>x.id!==id); save(); render(); }
+  }
+  else if(btn.classList.contains('act-edit')){ editingId = id; render(); }
+  else if(btn.classList.contains('act-cancel')){ editingId = null; render(); }
+  else if(btn.classList.contains('act-save')){
+    const name = row.querySelector('.eName').value.trim();
+    const w = parseW(row.querySelector('.eWeight').value);
+    if(!name || !(w>0)){ alert('Нужны название и вес больше нуля.'); return; }
+    e.name = name; e.weight = w; editingId = null; save(); render();
+  }
+});
+
+document.getElementById('expBtn').addEventListener('click', function(){
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'coverage-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+document.getElementById('impBtn').addEventListener('click', ()=> document.getElementById('impFile').click());
+document.getElementById('impFile').addEventListener('change', function(ev){
+  const f = ev.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = function(){
+    try{
+      const d = JSON.parse(r.result);
+      if(!d || !Array.isArray(d.entries)) throw 0;
+      if(!confirm('Заменить текущие данные данными из файла?')) return;
+      state = d; editingId = null; save(); render();
+    }catch(e){ alert('Не удалось прочитать файл: это не похож на экспорт покрытия.'); }
+  };
+  r.readAsText(f);
+  ev.target.value = '';
+});
+
+render();
+</script>
+</body>
+</html>
