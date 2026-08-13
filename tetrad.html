@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тетрадь тренера — шахматный дневник</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♞</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;0,800;1,500&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1712; --panel:#15251b; --panel2:#1b2f21; --card:#182a1d;
+  --line:#2a4130; --line2:#3a5641;
+  --ink:#f0ead9; --dim:#a8b3a0; --faint:#6f8168;
+  --gold:#e2b155; --gold2:#f0c878;
+  --win:#79c07d; --loss:#e06c56; --draw:#b5ae95;
+  color-scheme:dark;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 14px/1.5 'Golos Text',system-ui,sans-serif;
+  display:flex; min-height:100vh;
+}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(900px 520px at 62% -10%,rgba(226,177,85,.09),transparent 60%),
+             radial-gradient(700px 500px at -10% 110%,rgba(121,192,125,.06),transparent 60%);}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:repeating-conic-gradient(rgba(240,234,217,.017) 0% 25%,transparent 0% 50%);
+  background-size:112px 112px;}
+.drift{position:fixed;inset:0;overflow:hidden;z-index:0;pointer-events:none}
+.drift span{position:absolute;line-height:1;color:rgba(226,177,85,.04);
+  font-size:min(36vw,330px);animation:drift 70s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translateY(-2%) rotate(-6deg)}to{transform:translateY(3%) rotate(5deg)}}
+::selection{background:rgba(226,177,85,.35)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-thumb{background:#24382a;border-radius:99px}
+::-webkit-scrollbar-track{background:transparent}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+
+/* ---------- сайдбар ---------- */
+#side{position:sticky;top:0;height:100vh;overflow-y:auto;flex:0 0 300px;z-index:2;
+  padding:26px 20px;display:flex;flex-direction:column;gap:6px;
+  background:rgba(15,26,19,.82);border-right:1px solid var(--line)}
+.brand{display:flex;gap:13px;align-items:center}
+.knight{width:48px;height:48px;flex:0 0 48px;display:grid;place-items:center;
+  border:1.5px solid var(--gold);border-radius:13px;font-size:27px;color:var(--gold2);
+  background:radial-gradient(circle at 30% 25%,rgba(226,177,85,.22),rgba(226,177,85,.04));
+  animation:glow 4.5s ease-in-out infinite}
+@keyframes glow{50%{box-shadow:0 0 20px rgba(226,177,85,.35)}}
+.brand h1{font:800 22px/1.1 'Cormorant Garamond',serif;letter-spacing:.02em}
+.brand p{font:600 10px 'Golos Text';letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-top:4px}
+.side-lbl{margin:24px 2px 8px}
+#stuList{display:flex;flex-direction:column;gap:5px;flex:1;min-height:60px}
+.stu{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;
+  border-radius:11px;border:1px solid transparent;background:none;color:var(--ink);cursor:pointer;transition:.18s}
+.stu:hover{background:var(--panel2);transform:translateX(3px)}
+.stu.on{background:var(--panel2);border-color:var(--line2);box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.dot{width:10px;height:10px;flex:0 0 10px;border-radius:50%;background:var(--c);box-shadow:0 0 8px color-mix(in srgb,var(--c) 60%,transparent)}
+.stu .nm{font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stu .sub{font:400 11px 'JetBrains Mono',monospace;color:var(--faint)}
+.stu .cnt{margin-left:auto;font:600 11px 'JetBrains Mono',monospace;color:var(--faint);
+  background:#0f1c14;border:1px solid var(--line);border-radius:99px;padding:2px 8px}
+.side-foot{margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.hint{font:400 11px/1.6 'Golos Text';color:var(--faint);text-align:center;margin-top:10px}
+
+/* ---------- кнопки, поля ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;
+  border-radius:10px;border:1px solid var(--line2);background:var(--panel2);color:var(--ink);
+  font:600 13.5px 'Golos Text';cursor:pointer;transition:.2s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);border-color:var(--gold);color:var(--gold2);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.btn.gold{background:linear-gradient(180deg,#eabd63,#d9a13e);border-color:#f0cf8a;color:#241a08}
+.btn.gold:hover{filter:brightness(1.07);color:#241a08;box-shadow:0 8px 22px rgba(226,177,85,.25)}
+.btn.danger-solid{background:var(--loss);border-color:#f0907e;color:#2a0f08}
+.btn.danger-solid:hover{filter:brightness(1.08);color:#2a0f08}
+.btn.ghost{background:transparent}
+.btn.dashed{border-style:dashed}
+.btn.big{padding:13px 26px;font-size:15px}
+.wfull{width:100%}
+.linklike{background:none;border:0;color:var(--gold);cursor:pointer;font:inherit;text-decoration:underline dotted;padding:0}
+.lbl{display:block;font:700 10.5px 'Golos Text';letter-spacing:.15em;text-transform:uppercase;color:var(--faint);margin-bottom:6px}
+.inp,textarea,select{width:100%;background:#0f1c14;border:1px solid var(--line);color:var(--ink);
+  border-radius:10px;padding:10px 12px;font:400 14px 'Golos Text';transition:.18s}
+.inp:focus,textarea:focus,select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(226,177,85,.14)}
+textarea{resize:vertical;line-height:1.55}
+
+/* ---------- основная область ---------- */
+#main{flex:1;min-width:0;position:relative;z-index:1;padding:44px 52px 90px}
+.wrap{max-width:930px;margin:0 auto}
+.eyebrow{display:flex;align-items:center;gap:8px;font:700 10.5px 'Golos Text';letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
+.eyebrow i{width:22px;height:3px;border-radius:2px;background:var(--c,var(--gold))}
+.stu-name{font:700 clamp(32px,4.4vw,48px)/1.05 'Cormorant Garamond',serif;letter-spacing:.01em;margin:8px 0 14px}
+.sh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.sh-actions{display:flex;gap:8px;padding-top:6px}
+.sh-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:6px;font:500 12px 'JetBrains Mono',monospace;
+  color:var(--dim);border:1px solid var(--line);border-radius:99px;padding:5px 12px;text-decoration:none;transition:.18s}
+a.chip:hover{border-color:var(--gold);color:var(--gold2)}
+.chip.dim{color:var(--faint)}
+.about{margin-top:12px;font:italic 500 15px/1.55 'Cormorant Garamond',serif;color:var(--dim);max-width:640px}
+.last{font:400 11.5px 'JetBrains Mono',monospace;color:var(--faint);margin-top:10px}
+
+/* статистика */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:26px 0 4px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:14px 16px;transition:.2s}
+.stat:hover{border-color:var(--line2);transform:translateY(-2px)}
+.stat.wide{grid-column:span 4}
+.stat .n{font:700 32px/1 'Cormorant Garamond',serif}
+.stat .l{font:600 10px 'Golos Text';letter-spacing:.13em;text-transform:uppercase;color:var(--faint);margin-top:5px}
+.win-c{color:var(--win)} .loss-c{color:var(--loss)} .draw-c{color:var(--draw)}
+.bar{height:10px;border-radius:99px;background:#0f1c14;overflow:hidden;display:flex;border:1px solid var(--line)}
+.bar i{height:100%;width:0;transition:width .9s cubic-bezier(.2,.7,.2,1)}
+.b-w{background:var(--win)} .b-l{background:var(--loss)} .b-d{background:var(--draw)}
+.bar-leg{display:flex;gap:16px;margin-top:8px;font:500 11px 'JetBrains Mono',monospace;color:var(--faint)}
+.toptags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.hint2{font-weight:400;letter-spacing:.02em;text-transform:none;color:var(--faint);opacity:.8}
+
+/* тулбар */
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:28px}
+.search{display:flex;align-items:center;gap:8px;flex:1;min-width:220px;
+  background:#0f1c14;border:1px solid var(--line);border-radius:10px;padding:0 12px;color:var(--faint);transition:.18s}
+.search:focus-within{border-color:var(--gold)}
+.search input{flex:1;background:none;border:0;outline:none;color:var(--ink);padding:10px 0;font:400 13.5px 'Golos Text'}
+.seg{display:inline-flex;background:#0f1c14;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+.seg button{padding:7px 13px;border-radius:8px;font:600 12.5px 'Golos Text';color:var(--dim);background:none;border:0;cursor:pointer;transition:.18s;white-space:nowrap}
+.seg button:hover{color:var(--ink)}
+.seg button.on{background:var(--gold);color:#241a08}
+.seg.res button.on[data-v="win"]{background:var(--win)}
+.seg.res button.on[data-v="loss"]{background:var(--loss);color:#fff}
+.seg.res button.on[data-v="draw"]{background:var(--draw);color:#221f14}
+.sp{flex:1}
+
+/* записи */
+.timeline{position:relative;margin-top:26px;padding-left:2px;display:flex;flex-direction:column;gap:14px}
+.timeline::before{content:'';position:absolute;left:3px;top:8px;bottom:8px;width:2px;border-radius:2px;
+  background:linear-gradient(var(--line2),transparent)}
+.entry{position:relative;margin-left:24px;background:linear-gradient(180deg,#1b2d20,#17261a);
+  border:1px solid var(--line);border-radius:13px;padding:18px 21px;
+  transition:transform .22s,border-color .22s,box-shadow .22s}
+.entry:hover{transform:translateY(-2px);border-color:#44664d;box-shadow:0 12px 28px rgba(0,0,0,.35)}
+.entry::before{content:'';position:absolute;left:-24px;top:24px;width:9px;height:9px;border-radius:50%;
+  background:var(--draw);box-shadow:0 0 0 3px var(--bg)}
+.entry.win::before{background:var(--win)} .entry.loss::before{background:var(--loss)}
+.e-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.e-date{font:500 12px 'JetBrains Mono',monospace;color:var(--faint);letter-spacing:.04em}
+.badge{font:700 10.5px 'Golos Text';letter-spacing:.1em;text-transform:uppercase;padding:4px 11px;border-radius:99px}
+.badge.win{color:var(--win);background:rgba(121,192,125,.12);border:1px solid rgba(121,192,125,.35)}
+.badge.loss{color:#f0917d;background:rgba(224,108,86,.12);border:1px solid rgba(224,108,86,.4)}
+.badge.draw{color:var(--draw);background:rgba(181,174,149,.1);border:1px solid rgba(181,174,149,.35)}
+.ecolor{font:600 12.5px 'Golos Text';color:var(--dim)}
+.echip{font:500 11.5px 'JetBrains Mono',monospace;color:var(--dim);border:1px solid var(--line);padding:3px 10px;border-radius:99px}
+.ib{background:none;border:0;color:var(--faint);cursor:pointer;padding:6px;border-radius:8px;opacity:.5;
+  display:grid;place-items:center;transition:.18s}
+.ib:hover{color:var(--gold);background:rgba(226,177,85,.12);opacity:1}
+.ib.danger:hover{color:var(--loss);background:rgba(224,108,86,.12)}
+.e-opp{margin-top:11px;font-size:13px;color:var(--dim)}
+.e-opp b{color:var(--ink);font-weight:600}
+.e-note{margin-top:9px;font-size:15.5px;line-height:1.65;white-space:pre-line}
+.e-plan{margin-top:13px;padding:10px 15px;border-left:3px solid var(--gold);border-radius:0 10px 10px 0;
+  background:rgba(226,177,85,.06);font-size:13.5px;line-height:1.55;color:#ead9b4}
+.e-plan span{display:block;font:700 9.5px 'Golos Text';letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+.e-foot{margin-top:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:space-between}
+.e-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tchip{display:inline-flex;align-items:center;gap:6px;font:600 11.5px 'Golos Text';
+  color:var(--gold2);background:rgba(226,177,85,.1);border:1px solid rgba(226,177,85,.35);
+  padding:4px 11px;border-radius:99px}
+.tchip.s{cursor:pointer;transition:.18s}
+.tchip.s:hover{background:rgba(226,177,85,.22);transform:translateY(-1px)}
+.tchip b{cursor:pointer;opacity:.65;font-weight:700}
+.tchip b:hover{opacity:1}
+.llink{display:inline-flex;align-items:center;gap:6px;font:500 12px 'JetBrains Mono',monospace;color:var(--gold);
+  text-decoration:none;border:1px solid rgba(226,177,85,.35);padding:5px 12px;border-radius:99px;transition:.18s}
+.llink:hover{background:rgba(226,177,85,.12);transform:translateY(-1px)}
+
+/* пустые состояния */
+.empty{border:1.5px dashed var(--line2);border-radius:16px;padding:48px 30px;text-align:center;margin-top:24px}
+.empty.small{padding:28px;font-size:13.5px;color:var(--dim)}
+.e-pawn{font-size:44px;color:var(--faint);margin-bottom:12px}
+.empty h3{font:700 26px 'Cormorant Garamond',serif;margin-bottom:8px}
+.empty p{color:var(--dim);max-width:440px;margin:0 auto 20px;line-height:1.6}
+.welcome{max-width:640px;margin:7vh auto 0;text-align:center}
+.board{display:grid;grid-template-columns:repeat(4,1fr);width:150px;aspect-ratio:1;margin:0 auto 30px;
+  border:2px solid var(--line2);border-radius:10px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.board i{display:grid;place-items:center;font-style:normal;font-size:30px}
+.board i.dk{background:#23402c} .board i.lt{background:#17281c}
+.board i.k{color:var(--gold2);text-shadow:0 0 16px rgba(226,177,85,.5);animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-5px)}}
+.welcome h2{font:700 44px/1.05 'Cormorant Garamond',serif;margin-bottom:14px}
+.welcome>p{color:var(--dim);max-width:480px;margin:0 auto 26px;line-height:1.65;font-size:15px}
+.foot{margin-top:64px;text-align:center;font:400 11.5px 'JetBrains Mono',monospace;color:var(--faint)}
+
+/* появление при скролле */
+.reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease,transform .5s ease}
+.reveal.in{opacity:1;transform:none}
+
+/* ---------- модальные окна ---------- */
+#overlay{position:fixed;inset:0;z-index:50;display:none;background:rgba(5,10,7,.74);backdrop-filter:blur(5px);
+  overflow:auto;padding:44px 16px}
+#overlay.show{display:block}
+.modal{width:min(620px,100%);margin:0 auto;background:#15251b;border:1px solid var(--line2);border-radius:16px;
+  padding:26px 28px 28px;box-shadow:0 34px 90px rgba(0,0,0,.6);animation:pop .3s cubic-bezier(.2,.9,.3,1.15)}
+.modal.big{width:min(780px,100%)}
+@keyframes pop{from{opacity:0;transform:translateY(16px) scale(.97)}}
+.m-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.m-head h3{font:800 26px 'Cormorant Garamond',serif}
+.x{background:none;border:1px solid var(--line);color:var(--dim);width:32px;height:32px;border-radius:9px;
+  cursor:pointer;font-size:13px;transition:.18s}
+.x:hover{color:var(--loss);border-color:var(--loss);transform:rotate(90deg)}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.full{grid-column:1/-1}
+.m-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+.cmsg{font-size:14.5px;line-height:1.65;color:var(--dim)}
+.sw-row{display:flex;gap:10px}
+.sw{width:24px;height:24px;border-radius:50%;cursor:pointer;background:var(--c);border:2px solid transparent;transition:.15s}
+.sw:hover{transform:scale(1.15)}
+.sw.on{border-color:#fff;box-shadow:0 0 0 3px rgba(240,234,217,.15),0 0 12px var(--c)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center;cursor:text;min-height:48px;padding:8px;
+  background:#0f1c14;border:1px solid var(--line);border-radius:10px}
+.tags:focus-within{border-color:var(--gold)}
+.tags input{flex:1;min-width:130px;background:none;border:0;outline:none;color:var(--ink);font:400 13px 'Golos Text';padding:4px}
+.tag-hint{font-size:11px;color:var(--faint);margin-top:5px}
+.exp-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;
+  cursor:pointer;font-size:13.5px;font-weight:500;transition:.15s;margin-bottom:6px}
+.exp-row:hover{border-color:var(--gold)}
+.exp-row input{accent-color:var(--gold);width:15px;height:15px}
+.exp-row .cnt{margin-left:auto;font:500 11px 'JetBrains Mono',monospace;color:var(--faint)}
+.exp-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px;margin:14px 0}
+#expPrev{width:100%;height:280px;font:400 11.5px/1.6 'JetBrains Mono',monospace;background:#0c1710;
+  color:#cfe3cf;border:1px solid var(--line);border-radius:10px;padding:13px;resize:vertical}
+
+/* ---------- тосты ---------- */
+#toasts{position:fixed;right:22px;bottom:22px;z-index:60;display:flex;flex-direction:column;gap:8px}
+.toast{background:#1e3224;border:1px solid var(--line2);border-left:3px solid var(--gold);color:var(--ink);
+  padding:11px 17px;border-radius:10px;font:500 13.5px 'Golos Text';box-shadow:0 12px 30px rgba(0,0,0,.45);
+  animation:tin .3s ease;transition:.4s;max-width:340px}
+.toast.out{opacity:0;transform:translateY(8px)}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}}
+
+@media(max-width:960px){
+  body{display:block}
+  #side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}
+  #stuList{flex-direction:row;flex-wrap:wrap}
+  .stu{border:1px solid var(--line);width:auto}
+  #main{padding:28px 20px 70px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .stat.wide{grid-column:span 2}
+  .fgrid,.exp-grid{grid-template-columns:1fr}
+  .sh-top{flex-direction:column}
+}
+</style>
+</head>
+<body>
+<div class="drift" aria-hidden="true">
+  <span style="top:-7%;left:-5%">♞</span>
+  <span style="bottom:-12%;right:-3%;animation-delay:-25s">♜</span>
+  <span style="top:40%;right:12%;font-size:min(20vw,190px);animation-delay:-48s">♛</span>
+</div>
+
+<aside id="side">
+  <div class="brand">
+    <div class="knight">♞</div>
+    <div><h1>Тетрадь тренера</h1><p>партии · наблюдения · план</p></div>
+  </div>
+  <div class="lbl side-lbl">Ученики · <span id="stuCount">0</span></div>
+  <nav id="stuList"></nav>
+  <button class="btn ghost dashed wfull" data-nav="add-stu">＋ Добавить ученика</button>
+  <div class="side-foot">
+    <button class="btn gold wfull" data-nav="export">✦ Экспорт для анализа</button>
+    <button class="btn ghost wfull" data-nav="import">Импорт резервной копии</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+    <p class="hint">Данные хранятся только в этом браузере.<br>Всего записей: <b id="totalEntries">0</b></p>
+  </div>
+</aside>
+
+<main id="main"></main>
+<div id="overlay"></div>
+<div id="toasts"></div>
+
+<script>
+'use strict';
+/* ================= утилиты ================= */
+const LS='coach-notebook-v1';
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const today=()=>new Date().toISOString().slice(0,10);
+const dOff=n=>new Date(Date.now()-n*864e5).toISOString().slice(0,10);
+const COLORS=['#e2b155','#e06c56','#79c07d','#5fb0b7','#8fa3e8','#c98bc9'];
+const TAG_SUGGEST=['дебют','зевок','тактика','расчёт','план','эндшпиль','цейтнот','профилактика','реализация','психология'];
+const R_LBL={win:'Победа',loss:'Поражение',draw:'Ничья'};
+const I={
+ pencil:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+ trash:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>',
+ search:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+ ext:'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 17 17 7M8 7h9v9"/></svg>'
+};
+const fmtDate=iso=>new Date(iso+'T12:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'short',year:'numeric'}).replace(' г.','');
+const dmy=iso=>new Date(iso+'T12:00:00').toLocaleDateString('ru-RU');
+const daysAgo=iso=>{const n=Math.floor((Date.now()-new Date(iso+'T12:00'))/864e5);return n<=0?'сегодня':n===1?'вчера':n+' дн. назад';};
+
+/* ================= данные ================= */
+function demoData(){
+  const sid='demo-'+uid();
+  return {
+    student:{id:sid,name:'Миша Соловьёв',lichess:'misha2012',level:'блиц ≈ 1420',
+      about:'Хорошо считает короткие варианты, но часто играет по шаблону. Любит атаковать, не любит защищаться.',
+      color:'#e2b155',demo:true,createdAt:dOff(34)},
+    entries:[
+      {id:uid(),studentId:sid,date:dOff(1),result:'loss',color:'black',control:'блиц 5+0',
+       opponent:'RookHammer',rating:'1455',link:'https://lichess.org/kQ7vB3xT',tags:['зевок','расчёт'],
+       note:'Провалил переход из дебюта: сыграл шаблонно, не проверяя ответы соперника. На 14-м ходу не увидел взятие с шахом — ровно тот случай «считай на один ход дальше», который разбирали в прошлый раз. В концовке зевнул ладью в один ход. Партия поучительная: в ней собраны почти все старые болячки.',
+       plan:'Перед каждым ходом — вопрос «что соперник хочет сделать прямо сейчас?». Решать 10 простых задач в день.'},
+      {id:uid(),studentId:sid,date:dOff(4),result:'win',color:'white',control:'рапид 10+5',
+       opponent:'petr_k',rating:'1390',link:'https://lichess.org/Ab2mZ9wK',tags:['реализация','эндшпиль','цейтнот'],
+       note:'Лучшая партия за месяц. Спокойно закончил развитие, сам создал сопернику слабую пешку и методично её атаковал. В ладейном эндшпиле с лишней пешкой не торопился — видно, что наша работа над техникой идёт впрок. Единственное: опять потратил половину времени к 15-му ходу на ровном месте.',
+       plan:'Правило «не думать дольше двух минут в типовых позициях». Следить за часами прямо во время партии.'},
+      {id:uid(),studentId:sid,date:dOff(9),result:'win',color:'black',control:'блиц 3+2',
+       opponent:'FastElephant',rating:'1433',link:'https://lichess.org/xY4pL0nR',tags:['тактика','психология'],
+       note:'Начал робко, отдал центр и долго стоял без плана. После зевка соперника не поверил в свою удачу и играл «на всякий случай», хотя позиция была уже выиграна. Вытащил на чистой технике. Плюс — не запаниковал в обоюдном цейтноте, это шаг вперёд.',
+       plan:'Разбирать позиции «у соперника что-то висит»: сначала убедиться, что это не ловушка, потом забирать.'}
+    ]
+  };
+}
+function load(){try{return JSON.parse(localStorage.getItem(LS));}catch{return null;}}
+function save(){localStorage.setItem(LS,JSON.stringify(state));}
+let state=load();
+if(!state){state={students:[],entries:[]};const d=demoData();state.students.push(d.student);state.entries.push(...d.entries);save();}
+let curId=state.students[0]?.id||null;
+let filter={q:'',res:'all'};
+const cur=()=>state.students.find(s=>s.id===curId);
+const entriesFor=sid=>state.entries.filter(e=>e.studentId===sid);
+const tagFreq=es=>{const m={};es.forEach(e=>(e.tags||[]).forEach(t=>m[t]=(m[t]||0)+1));
+  return Object.entries(m).sort((a,b)=>b[1]-a[1]);};
+
+/* ================= тосты, скролл-анимация ================= */
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;
+  $('#toasts').appendChild(t);setTimeout(()=>t.classList.add('out'),2600);setTimeout(()=>t.remove(),3100);}
+const io=new IntersectionObserver(es=>es.forEach(x=>{if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target);}}),{threshold:.06});
+function revealAll(){$$('#main .reveal').forEach(el=>io.observe(el));}
+function animNum(el,to){if(!el)return;const from=+el.dataset.v||0;el.dataset.v=to;
+  if(from===to){el.textContent=to;return;}
+  const t0=performance.now(),d=550;
+  (function f(t){const p=Math.min(1,(t-t0)/d);el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(f);})(t0);}
+
+/* ================= модальные окна ================= */
+const overlay=$('#overlay');
+function openModal(title,body,mount,big){
+  overlay.innerHTML=`<div class="modal${big?' big':''}" role="dialog" aria-modal="true">
+    <div class="m-head"><h3>${esc(title)}</h3><button class="x" data-close aria-label="Закрыть">✕</button></div>
+    <div class="m-body">${body}</div></div>`;
+  overlay.classList.add('show');
+  $$('[data-close]',overlay).forEach(b=>b.onclick=closeModal);
+  mount&&mount(overlay);
+}
+function closeModal(){overlay.classList.remove('show');overlay.innerHTML='';}
+overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('show'))closeModal();});
+function confirmBox(msg,yes,onYes){
+  openModal('Подтверждение',`<p class="cmsg">${esc(msg)}</p>
+    <div class="m-actions"><button class="btn ghost" data-close>Отмена</button>
+    <button class="btn danger-solid" id="cYes">${esc(yes)}</button></div>`,
+    m=>{$('#cYes',m).onclick=()=>{closeModal();onYes();};});
+}
+function segWire(m,sel){$(sel,m).addEventListener('click',ev=>{const b=ev.target.closest('button');
+  if(!b)return;$$('button',$(sel,m)).forEach(x=>x.classList.toggle('on',x===b));});}
+
+/* ================= рендер: сайдбар ================= */
+function renderStudents(){
+  $('#stuCount').textContent=state.students.length;
+  $('#totalEntries').textContent=state.entries.length;
+  $('#stuList').innerHTML=state.students.map(s=>`
+    <button class="stu ${s.id===curId?'on':''}" data-stu="${s.id}">
+      <i class="dot" style="--c:${s.color}"></i>
+      <span style="min-width:0"><span class="nm">${esc(s.name)}</span><br>
+      <span class="sub">${s.lichess?'@'+esc(s.lichess):'без ника'}</span></span>
+      <span class="cnt">${entriesFor(s.id).length}</span>
+    </button>`).join('')||'<p class="hint" style="text-align:left">Пока никого нет</p>';
+}
+
+/* ================= рендер: главная область ================= */
+function renderMain(){
+  const main=$('#main');
+  if(!state.students.length){
+    main.innerHTML=`<div class="wrap"><div class="welcome">
+      <div class="board">${Array.from({length:16},(_,i)=>{const r=i>>2,c=i&3,dk=(r+c)%2===0;
+        return `<i class="${dk?'dk':'lt'}${i===5?' k':''}">${i===5?'♞':''}</i>`;}).join('')}</div>
+      <h2>Начнём тетрадь</h2>
+      <p>Добавьте ученика, смотрите его партии на lichess и записывайте живые наблюдения. Со временем выгрузку можно отдать на анализ ИИ — и вместе составить программу исправления ошибок.</p>
+      <button class="btn gold big" data-nav="add-stu">＋ Добавить первого ученика</button>
+      <p class="hint" style="margin-top:18px">или <button class="linklike" data-nav="demo">загрузить демо-ученика</button>, чтобы посмотреть, как всё устроено</p>
+    </div></div>`;
+    revealAll();return;
+  }
+  const s=cur()||state.students[0];curId=s.id;
+  const es=entriesFor(s.id);
+  const w=es.filter(e=>e.result==='win').length,l=es.filter(e=>e.result==='loss').length,d=es.length-w-l;
+  const last=es.map(e=>e.date).sort().pop();
+  main.innerHTML=`<div class="wrap">
+    <header>
+      <div class="sh-top">
+        <div style="min-width:0">
+          <div class="eyebrow" style="--c:${s.color}"><i></i>ученик${s.demo?' · демо-записи':''}</div>
+          <h2 class="stu-name">${esc(s.name)}</h2>
+          <div class="sh-meta">
+            ${s.lichess?`<a class="chip" href="https://lichess.org/@/${encodeURIComponent(s.lichess)}" target="_blank" rel="noopener">@${esc(s.lichess)} ${I.ext}</a>`:''}
+            ${s.level?`<span class="chip">${esc(s.level)}</span>`:''}
+            <span class="chip dim">в дневнике с ${fmtDate(s.createdAt||today())}</span>
+          </div>
+          ${s.about?`<p class="about">${esc(s.about)}</p>`:''}
+        </div>
+        <div class="sh-actions">
+          <button class="btn ghost" data-act="edit-stu" title="Редактировать ученика">${I.pencil}</button>
+          <button class="btn ghost" data-act="del-stu" title="Удалить ученика">${I.trash}</button>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="n" id="nT">0</div><div class="l">партий в дневнике</div></div>
+        <div class="stat"><div class="n win-c" id="nW">0</div><div class="l">победы</div></div>
+        <div class="stat"><div class="n loss-c" id="nL">0</div><div class="l">поражения</div></div>
+        <div class="stat"><div class="n draw-c" id="nD">0</div><div class="l">ничьи</div></div>
+        <div class="stat wide">
+          <div class="l" style="margin:0 0 9px">распределение результатов</div>
+          <div class="bar"><i class="b-w" id="bw"></i><i class="b-l" id="bl"></i><i class="b-d" id="bd"></i></div>
+          <div class="bar-leg"><span class="win-c">■ победы</span><span class="loss-c">■ поражения</span><span class="draw-c">■ ничьи</span></div>
+        </div>
+        <div class="stat wide">
+          <div class="l" style="margin-bottom:4px">частые темы <span class="hint2">— клик по тегу фильтрует записи</span></div>
+          <div class="toptags">${tagFreq(es).slice(0,6).map(([t,c])=>`<button class="tchip s" data-act="tag" data-tag="${esc(t)}">${esc(t)} · ${c}</button>`).join('')||'<span style="color:var(--faint);font-size:12.5px">теги появятся по мере записи партий</span>'}</div>
+        </div>
+      </div>
+      ${last?`<div class="last">последняя запись — ${daysAgo(last)}</div>`:''}
+    </header>
+    <section class="toolbar">
+      <div class="search">${I.search}<input id="searchInp" placeholder="Поиск по заметкам, тегам, соперникам…" value="${esc(filter.q)}"></div>
+      <div class="seg res" id="resSeg">
+        <button data-v="all" class="${filter.res==='all'?'on':''}">Все</button>
+        <button data-v="win" class="${filter.res==='win'?'on':''}">Победы</button>
+        <button data-v="loss" class="${filter.res==='loss'?'on':''}">Поражения</button>
+        <button data-v="draw" class="${filter.res==='draw'?'on':''}">Ничьи</button>
+      </div>
+      <button class="btn gold" data-nav="add-entry">＋ Записать партию</button>
+    </section>
+    <section class="timeline" id="timeline"></section>
+    <footer class="foot">♟ тетрадь тренера · наблюдения не покидают ваш браузер · выгрузку можно отдать на анализ ИИ</footer>
+  </div>`;
+  /* оживление */
+  requestAnimationFrame(()=>{animNum($('#nT'),es.length);animNum($('#nW'),w);animNum($('#nL'),l);animNum($('#nD'),d);
+    const n=es.length||1;
+    $('#bw').style.width=(w/n*100)+'%';$('#bl').style.width=(l/n*100)+'%';$('#bd').style.width=(d/n*100)+'%';});
+  $('#searchInp').addEventListener('input',e=>{filter.q=e.target.value;renderEntries();});
+  $('#resSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    filter.res=b.dataset.v;$$('#resSeg button').forEach(x=>x.classList.toggle('on',x===b));renderEntries();});
+  renderEntries();
+}
+
+function entryHTML(e){
+  const cG=e.color==='white'?'♔':'♚',cL=e.color==='white'?'белые':'чёрные';
+  const okLink=e.link&&/^https?:\/\//i.test(e.link);
+  return `<article class="entry reveal ${e.result}" data-id="${e.id}">
+    <div class="e-top">
+      <span class="e-date">${fmtDate(e.date)}</span>
+      <span class="badge ${e.result}">${R_LBL[e.result]||''}</span>
+      <span class="ecolor">${cG} ${cL}</span>
+      ${e.control?`<span class="echip">${esc(e.control)}</span>`:''}
+      <span class="sp"></span>
+      <button class="ib" data-act="edit-entry" title="Редактировать">${I.pencil}</button>
+      <button class="ib danger" data-act="del-entry" title="Удалить">${I.trash}</button>
+    </div>
+    ${e.opponent?`<div class="e-opp">против <b>${esc(e.opponent)}</b>${e.rating?` <span style="color:var(--faint)">(≈${esc(e.rating)})</span>`:''}</div>`:''}
+    <p class="e-note">${esc(e.note)}</p>
+    ${e.plan?`<div class="e-plan"><span>что исправлять</span>${esc(e.plan)}</div>`:''}
+    <div class="e-foot">
+      <div class="e-tags">${(e.tags||[]).map(t=>`<button class="tchip s" data-act="tag" data-tag="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+      ${okLink?`<a class="llink" href="${esc(e.link)}" target="_blank" rel="noopener">партия на lichess ${I.ext}</a>`:''}
+    </div>
+  </article>`;
+}
+
+function renderEntries(){
+  const box=$('#timeline');if(!box)return;
+  const s=cur(),all=entriesFor(s.id);
+  /* счётчики на фильтре */
+  const cnt={win:0,loss:0,draw:0};all.forEach(e=>cnt[e.result]++);
+  $$('#resSeg button').forEach(b=>{const v=b.dataset.v;
+    b.innerHTML=v==='all'?`Все <span style="opacity:.6">· ${all.length}</span>`:`${R_LBL[v]+'ы'} <span style="opacity:.65">· ${cnt[v]}</span>`;});
+  if(!all.length){
+    box.innerHTML=`<div class="empty reveal"><div class="e-pawn">♟</div><h3>Пока ни одной записи</h3>
+      <p>Посмотрите партию ученика на lichess и запишите пару живых наблюдений — из них со временем соберётся картина его игры.</p>
+      <button class="btn gold" data-nav="add-entry">＋ Записать первую партию</button></div>`;
+    revealAll();return;
+  }
+  const q=filter.q.trim().toLowerCase();
+  let list=all.filter(e=>filter.res==='all'||e.result===filter.res);
+  if(q)list=list.filter(e=>[e.note,e.plan,e.opponent,e.control,(e.tags||[]).join(' ')].join(' ').toLowerCase().includes(q));
+  list.sort((a,b)=>a.date===b.date?(a.id<b.id?1:-1):(a.date<b.date?1:-1));
+  box.innerHTML=list.length?list.map(entryHTML).join(''):
+    `<div class="empty small reveal">Ничего не найдено${q?` по запросу «${esc(filter.q)}»`:''}. <button class="linklike" data-nav="clear-f">Сбросить фильтры</button></div>`;
+  revealAll();
+}
+function renderAll(){renderStudents();renderMain();}
+
+/* ================= формы ================= */
+function openStudentModal(existing){
+  const isEdit=!!existing;
+  const s=existing||{color:COLORS[state.students.length%COLORS.length]};
+  openModal(isEdit?'Ученик — редактирование':'Новый ученик',`
+    <div class="fgrid">
+      <div class="full"><label class="lbl">Имя ученика *</label>
+        <input id="fName" class="inp" maxlength="60" placeholder="Имя и фамилия" value="${esc(s.name||'')}"></div>
+      <div><label class="lbl">Ник на lichess</label>
+        <input id="fLichess" class="inp" placeholder="например, misha2012" value="${esc(s.lichess||'')}"></div>
+      <div><label class="lbl">Уровень</label>
+        <input id="fLevel" class="inp" placeholder="блиц ≈ 1400" value="${esc(s.level||'')}"></div>
+      <div class="full"><label class="lbl">Характеристика / на что делаем упор</label>
+        <textarea id="fAbout" rows="3" placeholder="Пара слов об ученике: стиль, привычки, цели…">${esc(s.about||'')}</textarea></div>
+      <div class="full"><label class="lbl">Цвет в дневнике</label>
+        <div class="sw-row" id="swRow">${COLORS.map(c=>`<span class="sw ${c===s.color?'on':''}" data-c="${c}" style="--c:${c}" role="button" tabindex="0"></span>`).join('')}</div></div>
+    </div>
+    <div class="m-actions"><button class="btn ghost" data-close>Отмена</button>
+    <button class="btn gold" id="fSave">${isEdit?'Сохранить':'Добавить ученика'}</button></div>`,
+  m=>{
+    $('#swRow',m).addEventListener('click',e=>{const t=e.target.closest('.sw');if(!t)return;
+      $$('.sw',m).forEach(x=>x.classList.remove('on'));t.classList.add('on');});
+    $('#fSave',m).onclick=()=>{
+      const name=$('#fName',m).value.trim();
+      if(!name){toast('Укажите имя ученика');$('#fName',m).focus();return;}
+      const data={name,lichess:$('#fLichess',m).value.trim().replace(/^@/,''),
+        level:$('#fLevel',m).value.trim(),about:$('#fAbout',m).value.trim(),
+        color:$('.sw.on',m)?.dataset.c||s.color};
+      if(isEdit){Object.assign(existing,data);toast('Данные ученика обновлены');}
+      else{state.students.push({id:uid(),createdAt:today(),...data});curId=state.students.at(-1).id;
+        filter={q:'',res:'all'};toast('Ученик добавлен');}
+      save();closeModal();renderAll();
+    };
+    setTimeout(()=>$('#fName',m).focus(),60);
+  });
+}
+
+function openEntryModal(existing){
+  const isEdit=!!existing;
+  const e=existing||{date:today(),result:'loss',color:'white',tags:[]};
+  let tags=[...(e.tags||[])];
+  openModal(isEdit?'Партия — редактирование':'Новая запись о партии',`
+    <div class="fgrid">
+      <div><label class="lbl">Дата партии *</label>
+        <input type="date" id="eDate" class="inp" value="${esc(e.date||today())}"></div>
+      <div><label class="lbl">Ссылка на партию (lichess)</label>
+        <input id="eLink" class="inp" placeholder="https://lichess.org/…" value="${esc(e.link||'')}"></div>
+      <div><label class="lbl">Результат ученика</label>
+        <div class="seg res" id="eRes">${[['win','Победа'],['loss','Поражение'],['draw','Ничья']]
+          .map(([v,l])=>`<button data-v="${v}" class="${e.result===v?'on':''}">${l}</button>`).join('')}</div></div>
+      <div><label class="lbl">Цвет</label>
+        <div class="seg" id="eColor">
+          <button data-v="white" class="${e.color!=='black'?'on':''}">♔ Белые</button>
+          <button data-v="black" class="${e.color==='black'?'on':''}">♚ Чёрные</button></div></div>
+      <div><label class="lbl">Контроль</label>
+        <input id="eCtrl" class="inp" list="ctrls" placeholder="блиц 5+0" value="${esc(e.control||'')}">
+        <datalist id="ctrls"><option>пуля 1+0</option><option>блиц 3+2</option><option>блиц 5+0</option>
+        <option>рапид 10+5</option><option>рапид 15+10</option><option>классика 60+30</option></datalist></div>
+      <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px">
+        <div><label class="lbl">Соперник</label><input id="eOpp" class="inp" placeholder="ник" value="${esc(e.opponent||'')}"></div>
+        <div><label class="lbl">Рейтинг</label><input id="eRat" class="inp" inputmode="numeric" placeholder="1450" value="${esc(e.rating||'')}"></div>
+      </div>
+      <div class="full"><label class="lbl">Теги</label>
+        <div class="tags" id="tagBox"><input id="tagInp" list="tagSug" placeholder="добавить тег…">
+        <datalist id="tagSug">${TAG_SUGGEST.map(t=>`<option value="${t}">`).join('')}</datalist></div>
+        <div class="tag-hint">Enter — добавить · подсказки: ${TAG_SUGGEST.slice(0,5).join(', ')}…</div></div>
+      <div class="full"><label class="lbl">Оценка тренера *</label>
+        <textarea id="eNote" rows="5" placeholder="Что видели по ходу партии? Ключевые моменты своими словами — как вы это увидели…">${esc(e.note||'')}</textarea></div>
+      <div class="full"><label class="lbl">На что обратить внимание / что исправлять</label>
+        <textarea id="ePlan" rows="2" placeholder="Вывод из этой партии (необязательно)">${esc(e.plan||'')}</textarea></div>
+    </div>
+    <div class="m-actions"><button class="btn ghost" data-close>Отмена</button>
+    <button class="btn gold" id="eSave">${isEdit?'Сохранить':'Записать партию'}</button></div>`,
+  m=>{
+    segWire(m,'#eRes');segWire(m,'#eColor');
+    const box=$('#tagBox',m),inp=$('#tagInp',m);
+    const draw=()=>{$$('.tchip',box).forEach(n=>n.remove());
+      tags.forEach((t,i)=>{const c=document.createElement('span');c.className='tchip';
+        c.innerHTML=`${esc(t)}<b data-i="${i}">×</b>`;box.insertBefore(c,inp);});};
+    draw();
+    box.addEventListener('click',ev=>{const b=ev.target.closest('b');
+      if(b){tags.splice(+b.dataset.i,1);draw();return;}inp.focus();});
+    inp.addEventListener('keydown',ev=>{
+      if(ev.key==='Enter'||ev.key===','){ev.preventDefault();
+        const v=inp.value.trim().replace(/,+$/,'').toLowerCase();
+        if(v&&!tags.includes(v)&&v.length<=24){tags.push(v);draw();}inp.value='';}});
+    $('#eSave',m).onclick=()=>{
+      const note=$('#eNote',m).value.trim();
+      const date=$('#eDate',m).value||today();
+      if(!note){toast('Напишите хотя бы пару предложений оценки');$('#eNote',m).focus();return;}
+      let link=$('#eLink',m).value.trim();
+      if(link&&!/^https?:\/\//i.test(link))link='https://'+link;
+      const data={date,result:$('#eRes .on',m).dataset.v,color:$('#eColor .on',m).dataset.v,
+        control:$('#eCtrl',m).value.trim(),opponent:$('#eOpp',m).value.trim(),
+        rating:$('#eRat',m).value.trim(),link,tags:[...tags],note,
+        plan:$('#ePlan',m).value.trim()};
+      if(isEdit){Object.assign(existing,data);toast('Запись обновлена');}
+      else{state.entries.push({id:uid(),studentId:curId,...data});toast('Партия записана в дневник');}
+      save();closeModal();renderAll();
+    };
+    setTimeout(()=>$('#eNote',m).focus(),60);
+  });
+}
+
+/* ================= экспорт для ИИ ================= */
+const AI_PROMPT=`Ты — опытный шахматный тренер-методист. Выше — мои живые наблюдения за партиями ученика: короткие человеческие оценки, которые я писал(а) во время и сразу после игры. Это не компьютерный анализ, а взгляд тренера.
+
+Сделай, пожалуйста, следующее:
+1. Выдели 3–6 устойчивых паттернов в игре ученика: типовые ошибки, слабые стадии партии, поведенческие черты (цейтноты, неуверенность, шаблонность и т.п.).
+2. Отметь сильные стороны и положительную динамику, если она видна по датам.
+3. Расставь приоритеты: что исправлять в первую очередь и почему именно это.
+4. Предложи черновой план работы на 4–6 недель: темы, типы упражнений, конкретные ориентиры для следующих партий.
+5. Если информации не хватает — задай мне 3–5 уточняющих вопросов.
+
+Отвечай по-русски, конкретно и по делу, без общих фраз.`;
+
+function buildMarkdown(ids,days,withPrompt){
+  const cut=days?new Date(Date.now()-days*864e5):null;
+  const out=[];
+  out.push(`# Тетрадь тренера — выгрузка от ${new Date().toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}`,'');
+  out.push('Формат данных: тренерские наблюдения. Каждая запись — одна партия на lichess и короткая человеческая оценка тренера.','');
+  ids.forEach(id=>{
+    const s=state.students.find(x=>x.id===id);if(!s)return;
+    let es=entriesFor(id);
+    if(cut)es=es.filter(e=>new Date(e.date+'T12:00')>=cut);
+    es.sort((a,b)=>a.date<b.date?-1:1);
+    const w=es.filter(e=>e.result==='win').length,l=es.filter(e=>e.result==='loss').length,d=es.length-w-l;
+    out.push(`## УЧЕНИК: ${s.name}`);
+    if(s.lichess)out.push(`- Ник на lichess: @${s.lichess} (https://lichess.org/@/${s.lichess})`);
+    if(s.level)out.push(`- Уровень: ${s.level}`);
+    if(s.about)out.push(`- Характеристика: ${s.about}`);
+    out.push(`- Записей за период: ${es.length} (+${w} −${l} =${d})`);
+    const tf=tagFreq(es);
+    if(tf.length)out.push(`- Частые темы: ${tf.map(([t,c])=>`${t} ×${c}`).join(', ')}`);
+    out.push('');
+    es.forEach((e,i)=>{
+      out.push(`### Партия ${i+1} — ${dmy(e.date)} — ${R_LBL[e.result]}, ${e.color==='white'?'белые':'чёрные'}`);
+      if(e.control)out.push(`- Контроль: ${e.control}`);
+      if(e.opponent)out.push(`- Соперник: ${e.opponent}${e.rating?` (≈${e.rating})`:''}`);
+      if(e.link)out.push(`- Ссылка: ${e.link}`);
+      if(e.tags?.length)out.push(`- Теги: ${e.tags.join(', ')}`);
+      out.push('Оценка тренера:');out.push(`«${e.note.trim()}»`);
+      if(e.plan){out.push('На что обратить внимание:');out.push(`«${e.plan.trim()}»`);}
+      out.push('');
+    });
+  });
+  if(withPrompt){out.push('---','','# ЗАДАНИЕ ДЛЯ АНАЛИЗА','',AI_PROMPT);}
+  return out.join('\n');
+}
+
+function openExport(){
+  if(!state.students.length){toast('Сначала добавьте ученика');return;}
+  const rows=state.students.map(s=>`<label class="exp-row">
+    <input type="checkbox" class="exp-stu" value="${s.id}" ${s.id===curId?'checked':''}>
+    <i class="dot" style="--c:${s.color}"></i>${esc(s.name)}
+    <span class="cnt">${entriesFor(s.id).length} зап.</span></label>`).join('');
+  openModal('Выгрузка для анализа',`
+    <p class="cmsg" style="margin-bottom:14px">Отметьте учеников — текст можно скопировать и вставить в чат с ИИ, чтобы получить разбор и программу работы.</p>
+    ${rows}
+    <div class="exp-grid">
+      <div><label class="lbl">Период</label>
+        <select id="expDays" class="inp"><option value="">за всё время</option>
+        <option value="7">последние 7 дней</option><option value="30">последние 30 дней</option></select></div>
+      <div style="display:flex;align-items:flex-end;padding-bottom:9px">
+        <label style="display:flex;gap:9px;align-items:center;cursor:pointer;font-size:13.5px">
+        <input type="checkbox" id="expPrompt" checked style="accent-color:var(--gold);width:15px;height:15px">
+        добавить задание для ИИ</label></div>
+    </div>
+    <textarea id="expPrev" readonly spellcheck="false"></textarea>
+    <div class="m-actions" style="flex-wrap:wrap">
+      <button class="btn ghost" id="expJson">Скачать .json (бэкап)</button>
+      <span class="sp"></span>
+      <button class="btn ghost" id="expMd">Скачать .md</button>
+      <button class="btn gold" id="expCopy">Копировать текст</button>
+    </div>`,
+  m=>{
+    const upd=()=>{
+      const ids=$$('.exp-stu:checked',m).map(i=>i.value);
+      const days=+$('#expDays',m).value||0;
+      $('#expPrev',m).value=ids.length
+        ?buildMarkdown(ids,days,$('#expPrompt',m).checked)
+        :'Отметьте хотя бы одного ученика.';
+    };
+    $$('.exp-stu',m).forEach(i=>i.addEventListener('change',upd));
+    $('#expDays',m).addEventListener('change',upd);
+    $('#expPrompt',m).addEventListener('change',upd);
+    upd();
+    $('#expCopy',m).onclick=async()=>{
+      const t=$('#expPrev',m).value;
+      try{await navigator.clipboard.writeText(t);}catch{$('#expPrev',m).select();document.execCommand('copy');}
+      $('#expCopy',m).textContent='Скопировано ✓';
+      setTimeout(()=>$('#expCopy',m).textContent='Копировать текст',1700);
+      toast('Готово — можно вставлять в чат с ИИ');};
+    $('#expMd',m).onclick=()=>download(`tetrad-trenera-${today()}.md`,$('#expPrev',m).value,'text/markdown');
+    $('#expJson',m).onclick=()=>download(`coach-notebook-${today()}.json`,JSON.stringify(state,null,2),'application/json');
+  },true);
+}
+function download(name,text,type){const b=new Blob([text],{type:type+';charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000);}
+
+/* ================= события ================= */
+document.body.addEventListener('click',ev=>{
+  const stu=ev.target.closest('[data-stu]');
+  if(stu){curId=stu.dataset.stu;filter={q:'',res:'all'};renderAll();return;}
+  const nav=ev.target.closest('[data-nav]');
+  if(nav){const v=nav.dataset.nav;
+    if(v==='add-stu')openStudentModal();
+    if(v==='add-entry'){cur()?openEntryModal():toast('Сначала добавьте ученика');}
+    if(v==='export')openExport();
+    if(v==='import')$('#importFile').click();
+    if(v==='demo'){const d=demoData();state.students.push(d.student);state.entries.push(...d.entries);
+      save();curId=d.student.id;filter={q:'',res:'all'};renderAll();
+      toast('Демо-ученик добавлен — его можно удалить в любой момент');}
+    if(v==='clear-f'){filter={q:'',res:'all'};const si=$('#searchInp');if(si)si.value='';renderMain();}
+    return;}
+  const act=ev.target.closest('[data-act]');
+  if(!act)return;
+  const a=act.dataset.act;
+  const id=act.closest('[data-id]')?.dataset.id;
+  if(a==='edit-entry')openEntryModal(state.entries.find(x=>x.id===id));
+  if(a==='del-entry')confirmBox('Удалить запись о партии? Это действие необратимо.','Удалить',()=>{
+    state.entries=state.entries.filter(x=>x.id!==id);save();renderAll();toast('Запись удалена');});
+  if(a==='edit-stu')openStudentModal(cur());
+  if(a==='del-stu'){const s=cur();if(!s)return;
+    confirmBox(`Удалить ученика «${s.name}» и все его записи (${entriesFor(s.id).length} шт.)?`,'Удалить',()=>{
+      state.students=state.students.filter(x=>x.id!==s.id);
+      state.entries=state.entries.filter(x=>x.studentId!==s.id);
+      curId=state.students[0]?.id||null;save();renderAll();toast('Ученик удалён');});}
+  if(a==='tag'){filter.q=act.dataset.tag;const si=$('#searchInp');if(si)si.value=filter.q;renderEntries();
+    $('#timeline')?.scrollIntoView({behavior:'smooth',block:'start'});}
+});
+$('#side').addEventListener('click',ev=>{ /* навигация в сайдбаре уже покрыта общим обработчиком */ });
+
+$('#importFile').addEventListener('change',ev=>{
+  const f=ev.target.files[0];ev.target.value='';if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const data=JSON.parse(r.result);
+    if(!Array.isArray(data.students)||!Array.isArray(data.entries))throw 0;
+    let aS=0,aE=0;
+    data.students.forEach(s=>{if(s&&s.id&&!state.students.some(x=>x.id===s.id)){state.students.push(s);aS++;}});
+    data.entries.forEach(e=>{if(e&&e.id&&!state.entries.some(x=>x.id===e.id)
+      &&state.students.some(s=>s.id===e.studentId)){state.entries.push(e);aE++;}});
+    save();if(!curId)curId=state.students[0]?.id;renderAll();
+    toast(`Импортировано: учеников — ${aS}, записей — ${aE}`);
+  }catch{toast('Не удалось прочитать файл — это точно резервная копия?');}};
+  r.readAsText(f);
+});
+
+/* ================= старт ================= */
+renderAll();
+</script>
+</body>
+</html>
