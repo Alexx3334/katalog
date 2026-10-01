@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ягодки</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🍓%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fdf8f5;
+  --panel:#ffffff;
+  --line:#f0e6e0;
+  --text:#3a2a2a;
+  --dim:#8a7a7a;
+  --raspberry:#d6336c;
+  --raspberry-light:#fce4ec;
+  --blueberry:#364fc7;
+  --blueberry-light:#e7f5ff;
+  --blackberry:#862e9c;
+  --blackberry-light:#f3d9fa;
+  --shadow:0 4px 16px rgba(134,46,156,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font:400 15px/1.5 'Nunito',sans-serif;
+  display:flex;
+  min-height:100vh;
+}
+
+#side{
+  position:sticky;
+  top:0;
+  height:100vh;
+  overflow-y:auto;
+  flex:0 0 280px;
+  padding:24px 16px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  background:var(--panel);
+  border-right:1px solid var(--line);
+}
+.brand{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:20px;
+  padding-bottom:16px;
+  border-bottom:2px solid var(--line);
+}
+.brand-icon{font-size:28px}
+.brand h1{font:800 24px 'Nunito';color:var(--blackberry);letter-spacing:-0.02em}
+.brand p{font:600 10px 'Nunito';color:var(--dim);letter-spacing:0.1em;text-transform:uppercase}
+
+.side-lbl{
+  margin:12px 4px 6px;
+  font:700 10px 'Nunito';
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--dim);
+}
+#studentList{display:flex;flex-direction:column;gap:4px;flex:1}
+.stu-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:10px 12px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:0.2s;
+  font:600 14px 'Nunito';
+  border:1px solid transparent;
+  background:none;
+  color:var(--text);
+  width:100%;
+  text-align:left;
+}
+.stu-item:hover{background:var(--raspberry-light);border-color:var(--raspberry)}
+.stu-item.on{background:var(--blackberry-light);border-color:var(--blackberry);color:var(--blackberry)}
+.stu-item .sx{background:none;border:0;color:var(--dim);cursor:pointer;padding:2px 6px;border-radius:4px;font-size:12px;opacity:0;transition:0.18s;margin-left:auto}
+.stu-item:hover .sx{opacity:1}
+.stu-item .sx:hover{color:var(--raspberry)}
+
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  padding:10px 14px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:var(--panel);
+  color:var(--text);
+  font:700 13px 'Nunito';
+  cursor:pointer;
+  transition:0.2s;
+  white-space:nowrap;
+}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.btn.primary{background:var(--blackberry);border-color:var(--blackberry);color:#fff}
+.btn.primary:hover{background:#9c36b5}
+.btn.raspberry{background:var(--raspberry);border-color:var(--raspberry);color:#fff}
+.btn.raspberry:hover{background:#c2255c}
+.btn.ghost{background:transparent}
+.wfull{width:100%}
+:focus-visible{outline:2px solid var(--blackberry);outline-offset:2px}
+
+#main{flex:1;min-width:0;padding:40px}
+.wrap{max-width:800px;margin:0 auto}
+.page-title{font:800 32px 'Nunito';color:var(--blackberry);margin-bottom:20px;letter-spacing:-0.02em}
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:24px;
+  margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.card h2{font:700 18px 'Nunito';margin-bottom:14px;color:var(--text);display:flex;align-items:center;gap:8px}
+
+.sub-block{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:16px;
+  border-radius:12px;
+  background:var(--blackberry-light);
+  border:1px solid var(--blackberry);
+}
+.sub-block.empty{background:var(--line);border-style:dashed;border-color:var(--dim)}
+.sub-block.danger{background:#fff5f5;border-color:var(--raspberry)}
+.sub-num{font:800 48px 'Nunito';color:var(--blackberry);line-height:1}
+.sub-block.danger .sub-num{color:var(--raspberry)}
+.sub-label{font:600 12px 'Nunito';color:var(--dim);text-transform:uppercase;letter-spacing:0.05em}
+.sub-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.lesson-list{display:flex;flex-direction:column;gap:8px}
+.lesson-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 14px;
+  background:var(--bg);
+  border-radius:10px;
+  border:1px solid var(--line);
+}
+.lesson-date{font:700 14px 'Nunito';min-width:100px;color:var(--text)}
+.lesson-berries{display:flex;gap:8px;margin-left:auto}
+.berry{
+  width:32px;height:32px;
+  border-radius:50%;
+  border:2px solid var(--line);
+  background:var(--panel);
+  cursor:pointer;
+  transition:0.2s;
+  display:grid;place-items:center;
+  font-size:16px;
+}
+.berry:hover{transform:scale(1.1)}
+.berry.raspberry.on{background:var(--raspberry);border-color:var(--raspberry);color:#fff}
+.berry.blueberry.on{background:var(--blueberry);border-color:var(--blueberry);color:#fff}
+.lesson-del{background:none;border:0;color:var(--dim);cursor:pointer;font-size:14px;padding:4px 8px;border-radius:6px}
+.lesson-del:hover{color:var(--raspberry);background:var(--raspberry-light)}
+
+.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
+.cal-head{font:700 11px 'Nunito';color:var(--dim);text-align:center;text-transform:uppercase;padding:4px}
+.cal-cell{
+  aspect-ratio:1;
+  background:var(--bg);
+  border-radius:8px;
+  border:1px solid var(--line);
+  padding:4px;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+  font:600 11px 'Nunito';
+  color:var(--dim);
+  position:relative;
+}
+.cal-cell.today{border-color:var(--blackberry);background:var(--blackberry-light)}
+.cal-cell .cal-num{font:700 12px 'Nunito';color:var(--text)}
+.cal-dots{display:flex;gap:2px;flex-wrap:wrap;margin-top:auto}
+.cal-dot{width:6px;height:6px;border-radius:50%}
+.cal-dot.r{background:var(--raspberry)}
+.cal-dot.b{background:var(--blueberry)}
+
+.empty-state{
+  text-align:center;
+  padding:60px 20px;
+  color:var(--dim);
+}
+.empty-state .icon{font-size:48px;margin-bottom:12px;opacity:0.5}
+.empty-state h3{font:700 20px 'Nunito';margin-bottom:6px;color:var(--text)}
+
+#overlay{position:fixed;inset:0;z-index:50;display:none;background:rgba(58,42,42,0.4);backdrop-filter:blur(4px);overflow:auto;padding:40px 16px}
+#overlay.show{display:block}
+.modal{width:min(420px,100%);margin:0 auto;background:var(--panel);border-radius:14px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.15);animation:pop 0.25s ease}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(0.97)}}
+.m-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.m-head h3{font:700 20px 'Nunito';color:var(--blackberry)}
+.x{background:none;border:1px solid var(--line);color:var(--dim);width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:14px;transition:0.18s}
+.x:hover{color:var(--raspberry);border-color:var(--raspberry)}
+.lbl{display:block;font:700 11px 'Nunito';letter-spacing:0.08em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.inp{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px;font:600 14px 'Nunito';transition:0.18s}
+.inp:focus{outline:none;border-color:var(--blackberry);box-shadow:0 0 0 3px rgba(134,46,156,0.1)}
+.m-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
+.toast{position:fixed;bottom:20px;right:20px;background:var(--blackberry);color:#fff;padding:12px 20px;border-radius:10px;font:700 14px 'Nunito';box-shadow:0 10px 30px rgba(134,46,156,0.3);animation:tin 0.3s ease;z-index:60}
+@keyframes tin{from{opacity:0;transform:translateY(10px)}}
+
+@media(max-width:768px){
+  body{display:block}
+  #side{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding:16px}
+  #main{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<aside id="side">
+  <div class="brand">
+    <div class="brand-icon"></div>
+    <div><h1>Ягодки</h1><p>учёт занятий</p></div>
+  </div>
+  <div class="side-lbl">Ученики</div>
+  <nav id="studentList"></nav>
+  <button class="btn primary wfull" data-act="add-stu">＋ Ученик</button>
+</aside>
+
+<main id="main"></main>
+<div id="overlay"></div>
+
+<script>
+'use strict';
+const LS='yagodka-v1';
+const $=(s,el=document)=>el.querySelector(s);
+const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const todayStr=()=>new Date().toISOString().slice(0,10);
+
+function load(){try{return JSON.parse(localStorage.getItem(LS));}catch{return null;}}
+function save(){localStorage.setItem(LS,JSON.stringify(state));}
+let state=load();
+if(!state){state={students:[]};save();}
+
+let currentStuId=null;
+
+function toast(msg){
+  const old=document.querySelector('.toast');
+  if(old)old.remove();
+  const t=document.createElement('div');
+  t.className='toast';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2500);
+}
+
+function playSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.frequency.value=880;
+    gain.gain.value=0.15;
+    osc.start();
+    setTimeout(()=>osc.stop(),200);
+  }catch{}
+}
+
+const overlay=$('#overlay');
+function openModal(title,body,mount){
+  overlay.innerHTML=`<div class="modal"><div class="m-head"><h3>${esc(title)}</h3><button class="x" data-close>✕</button></div><div class="m-body">${body}</div></div>`;
+  overlay.classList.add('show');
+  $$('[data-close]',overlay).forEach(b=>b.onclick=closeModal);
+  mount&&mount(overlay);
+}
+function closeModal(){overlay.classList.remove('show');overlay.innerHTML='';}
+overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&overlay.classList.contains('show'))closeModal();});
+
+function renderStudents(){
+  const list=$('#studentList');
+  if(!state.students.length){
+    list.innerHTML='<p style="font:600 12px Nunito;color:var(--dim);padding:8px">Пока пусто</p>';
+    return;
+  }
+  list.innerHTML=state.students.map(s=>`
+    <button class="stu-item ${currentStuId===s.id?'on':''}" data-stu="${s.id}">
+      <span>${esc(s.name)}</span>
+      <button class="sx" data-delstu="${s.id}" title="Удалить">✕</button>
+    </button>
+  `).join('');
+}
+
+function renderMain(){
+  const main=$('#main');
+  if(!currentStuId){
+    main.innerHTML=`<div class="empty-state"><div class="icon">🍓</div><h3>Выбери ученика</h3><p>Или добавь нового слева</p></div>`;
+    return;
+  }
+  const stu=state.students.find(s=>s.id===currentStuId);
+  if(!stu){currentStuId=null;renderAll();return;}
+  
+  let html=`<div class="wrap">
+    <h1 class="page-title">${esc(stu.name)}</h1>`;
+  
+  // Абонемент
+  const sub=stu.subscription;
+  if(sub){
+    const isDanger=sub.remaining<=0;
+    html+=`<div class="card">
+      <h2>🍇 Абонемент</h2>
+      <div class="sub-block ${isDanger?'danger':''}">
+        <div>
+          <div class="sub-label">Осталось занятий</div>
+          <div class="sub-num">${sub.remaining}</div>
+        </div>
+        <div class="sub-actions">
+          <button class="btn raspberry" data-act="do-lesson" ${isDanger?'disabled style="opacity:0.5;cursor:not-allowed"':''}>Провести</button>
+          <button class="btn ghost" data-act="reset-sub">Сбросить</button>
+        </div>
+      </div>
+    </div>`;
+  } else {
+    html+=`<div class="card">
+      <h2>🍇 Абонемент</h2>
+      <div class="sub-block empty">
+        <div><div class="sub-label">Нет активного абонемента</div></div>
+        <button class="btn primary" data-act="new-sub">Новый абонемент</button>
+      </div>
+    </div>`;
+  }
+  
+  // Разовые занятия
+  const lessons=(stu.oneTimeLessons||[]).slice().sort((a,b)=>b.date.localeCompare(a.date));
+  html+=`<div class="card">
+    <h2>🍓 Разовые занятия <button class="btn primary" style="margin-left:auto;font-size:12px;padding:6px 12px" data-act="add-lesson">＋</button></h2>
+    ${lessons.length?`<div class="lesson-list">${lessons.map(l=>`
+      <div class="lesson-row">
+        <div class="lesson-date">${l.date}</div>
+        <div class="lesson-berries">
+          <button class="berry raspberry ${l.conducted?'on':''}" data-toggle="${l.id}" data-field="conducted" title="Проведено">🍓</button>
+          <button class="berry blueberry ${l.paid?'on':''}" data-toggle="${l.id}" data-field="paid" title="Оплачено">🫐</button>
+        </div>
+        <button class="lesson-del" data-dellesson="${l.id}">✕</button>
+      </div>
+    `).join('')}</div>`:'<p style="font:600 13px Nunito;color:var(--dim);padding:8px">Пока нет разовых занятий</p>'}
+  </div>`;
+  
+  // Календарь
+  html+=`<div class="card"><h2>📅 Календарь</h2>${renderCalendar(stu)}</div>`;
+  
+  html+=`</div>`;
+  main.innerHTML=html;
+  
+  // Звук при нулевом абонементе
+  if(sub && sub.remaining===0){
+    playSound();
+  }
+}
+
+function renderCalendar(stu){
+  const now=new Date();
+  const year=now.getFullYear();
+  const month=now.getMonth();
+  const firstDay=new Date(year,month,1).getDay()||7;
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const today=now.getDate();
+  
+  const lessonsByDate={};
+  (stu.oneTimeLessons||[]).forEach(l=>{
+    if(l.date.startsWith(`${year}-${String(month+1).padStart(2,'0')}`)){
+      if(!lessonsByDate[l.date])lessonsByDate[l.date]={r:false,b:false};
+      if(l.conducted)lessonsByDate[l.date].r=true;
+      if(l.paid)lessonsByDate[l.date].b=true;
+    }
+  });
+  
+  const months=['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const days=['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+  
+  let html=`<div style="font:700 14px Nunito;color:var(--blackberry);margin-bottom:10px">${months[month]} ${year}</div>`;
+  html+=`<div class="calendar">`;
+  days.forEach(d=>html+=`<div class="cal-head">${d}</div>`);
+  for(let i=1;i<firstDay;i++)html+=`<div class="cal-cell"></div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dots=lessonsByDate[dateStr];
+    html+=`<div class="cal-cell ${d===today?'today':''}">
+      <div class="cal-num">${d}</div>
+      <div class="cal-dots">
+        ${dots?.r?'<div class="cal-dot r"></div>':''}
+        ${dots?.b?'<div class="cal-dot b"></div>':''}
+      </div>
+    </div>`;
+  }
+  html+=`</div>`;
+  return html;
+}
+
+// === Единый обработчик кликов ===
+document.body.addEventListener('click',e=>{
+  // Закрытие модалки
+  if(e.target.closest('[data-close]')){closeModal();return;}
+  
+  // Удаление ученика
+  const delStuBtn=e.target.closest('[data-delstu]');
+  if(delStuBtn){
+    e.stopPropagation();
+    const id=delStuBtn.dataset.delstu;
+    const stu=state.students.find(s=>s.id===id);
+    if(!stu)return;
+    if(confirm(`Удалить ученика «${stu.name}»?`)){
+      state.students=state.students.filter(s=>s.id!==id);
+      if(currentStuId===id)currentStuId=null;
+      save();renderAll();toast('Ученик удалён');
+    }
+    return;
+  }
+  
+  // Выбор ученика
+  const stuBtn=e.target.closest('[data-stu]');
+  if(stuBtn){
+    currentStuId=stuBtn.dataset.stu;
+    renderAll();
+    return;
+  }
+  
+  // Переключение ягодки
+  const toggleBtn=e.target.closest('[data-toggle]');
+  if(toggleBtn){
+    const stu=state.students.find(s=>s.id===currentStuId);
+    if(!stu)return;
+    const lid=toggleBtn.dataset.toggle;
+    const field=toggleBtn.dataset.field;
+    const lesson=(stu.oneTimeLessons||[]).find(l=>l.id===lid);
+    if(lesson){
+      lesson[field]=!lesson[field];
+      save();renderAll();
+    }
+    return;
+  }
+  
+  // Удаление занятия
+  const delLesBtn=e.target.closest('[data-dellesson]');
+  if(delLesBtn){
+    const stu=state.students.find(s=>s.id===currentStuId);
+    if(!stu)return;
+    const lid=delLesBtn.dataset.dellesson;
+    stu.oneTimeLessons=(stu.oneTimeLessons||[]).filter(l=>l.id!==lid);
+    save();renderAll();toast('Занятие удалено');
+    return;
+  }
+  
+  // Действия по data-act
+  const actBtn=e.target.closest('[data-act]');
+  if(!actBtn)return;
+  const act=actBtn.dataset.act;
+  const stu=state.students.find(s=>s.id===currentStuId);
+  
+  if(act==='add-stu'){
+    openModal('Новый ученик',`
+      <div><label class="lbl">Имя</label>
+      <input id="stuName" class="inp" maxlength="40" placeholder="Например, Максим"></div>
+      <div class="m-actions">
+        <button class="btn ghost" data-close>Отмена</button>
+        <button class="btn primary" id="stuSave">Добавить</button>
+      </div>`,m=>{
+      $('#stuSave',m).onclick=()=>{
+        const name=$('#stuName',m).value.trim();
+        if(!name){toast('Введи имя');return;}
+        state.students.push({id:uid(),name,subscription:null,oneTimeLessons:[]});
+        save();closeModal();
+        currentStuId=state.students[state.students.length-1].id;
+        renderAll();toast('Ученик добавлен');
+      };
+      setTimeout(()=>$('#stuName',m).focus(),60);
+    });
+    return;
+  }
+  
+  if(!stu)return;
+  
+  if(act==='new-sub'){
+    openModal('Новый абонемент',`
+      <div><label class="lbl">Количество занятий</label>
+      <input id="subCount" type="number" class="inp" min="1" value="8"></div>
+      <div class="m-actions">
+        <button class="btn ghost" data-close>Отмена</button>
+        <button class="btn primary" id="subSave">Создать</button>
+      </div>`,m=>{
+      $('#subSave',m).onclick=()=>{
+        const count=parseInt($('#subCount',m).value);
+        if(!count||count<=0){toast('Укажи число');return;}
+        stu.subscription={total:count,remaining:count,startDate:todayStr()};
+        save();closeModal();renderAll();toast('Абонемент создан');
+      };
+      setTimeout(()=>$('#subCount',m).focus(),60);
+    });
+    return;
+  }
+  
+  if(act==='do-lesson'){
+    if(stu.subscription&&stu.subscription.remaining>0){
+      stu.subscription.remaining--;
+      save();renderAll();
+      if(stu.subscription.remaining===0){
+        toast('⚠️ Абонемент закончился!');
+        playSound();
+      } else {
+        toast('Занятие проведено');
+      }
+    }
+    return;
+  }
+  
+  if(act==='reset-sub'){
+    if(confirm('Сбросить абонемент?')){
+      stu.subscription=null;
+      save();renderAll();toast('Абонемент сброшен');
+    }
+    return;
+  }
+  
+  if(act==='add-lesson'){
+    openModal('Разовое занятие',`
+      <div><label class="lbl">Дата</label>
+      <input id="lesDate" type="date" class="inp" value="${todayStr()}"></div>
+      <div class="m-actions">
+        <button class="btn ghost" data-close>Отмена</button>
+        <button class="btn primary" id="lesSave">Добавить</button>
+      </div>`,m=>{
+      $('#lesSave',m).onclick=()=>{
+        const date=$('#lesDate',m).value;
+        if(!date){toast('Выбери дату');return;}
+        if(!stu.oneTimeLessons)stu.oneTimeLessons=[];
+        stu.oneTimeLessons.push({id:uid(),date,conducted:false,paid:false});
+        save();closeModal();renderAll();toast('Занятие добавлено');
+      };
+    });
+    return;
+  }
+});
+
+function renderAll(){renderStudents();renderMain();}
+renderAll();
+</script>
+</body>
+</html>
